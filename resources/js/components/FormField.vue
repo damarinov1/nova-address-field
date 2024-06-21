@@ -12,6 +12,13 @@
                 :country="field.countries"
                 v-on:placechanged="getAddressData">
             </vue-google-autocomplete>
+            <input
+                type="text"
+                id="override_address"
+                class="w-full form-control form-input form-input-bordered mt-2"
+                placeholder="Override Address"
+                v-model="addressData.override_address"
+            >
             <div class="flex w-full pt-2">
                 <div class="flex w-1/2">
                     <checkbox
@@ -29,7 +36,8 @@
                         @input="toggleLatLng"
                         class="py-2 pr-2"
                     />
-                    <label @click="toggleLatLng" class="inline-block text-80 pt-2 leading-tight">Show Coordinations</label>
+                    <label @click="toggleLatLng" class="inline-block text-80 pt-2 leading-tight">Show
+                        Coordinates</label>
                 </div>
             </div>
             <div v-show="field.withLatLng" class="flex flex-wrap w-full">
@@ -63,7 +71,7 @@
                 </div>
             </div>
 
-            <div class="google-map w-full" :id="mapName" v-show="field.withMap"></div>
+            <div class="google-map w-full" ref="map" v-show="field.withMap"></div>
 
             <p v-if="hasError" class="my-2 text-danger">
                 {{ firstError }}
@@ -86,13 +94,17 @@ export default {
 
     data: function () {
         return {
-            mapName: this.name + "-map",
             mapOptions: {
                 center: new google.maps.LatLng(40.730610, -98.935242),
                 zoom: 5
             },
             address: '',
-            addressData: {latitude: this.field.lat || '', longitude: this.field.lng || '', address: ''},
+            addressData: {
+                latitude: this.field.lat || '',
+                longitude: this.field.lng || '',
+                address: '',
+                zoom: this.field.zoom || 5
+            },
             map: null,
             marker: null,
             geocoder: new google.maps.Geocoder,
@@ -112,6 +124,7 @@ export default {
             this.addressData.latitude = addressData.latitude;
             this.addressData.longitude = addressData.longitude;
             this.addressData.formatted_address = placeResultData.formatted_address;
+            this.addressData.override_address = '';
             this.refreshMap()
             this.$emit('addressChanged', this.addressData)
         },
@@ -129,21 +142,20 @@ export default {
         },
 
         initMap() {
-            console.log('hsbfjsdbfjdbjdb')
-            const element = document.getElementById(this.mapName);
-            let center =  new google.maps.LatLng(this.addressData.latitude, this.addressData.longitude)
+            const element = this.$refs.map;
+            let center = new google.maps.LatLng(this.addressData.latitude, this.addressData.longitude)
 
             // setup map options
             const options = {
-                zoom: this.field.zoom || 5,
+                zoom: this.addressData.zoom || this.field.zoom || 5,
                 center: center
             };
             // initialize the map
             this.map = new google.maps.Map(element, options);
 
             // get formatted address for the latitude and longitude
-            if(!this.addressData.address) {
-                this.geocode(center)
+            if (!this.addressData.address) {
+                this.geocode(center, true)
             }
             // adding initial marker
             this.marker = new google.maps.Marker({
@@ -152,9 +164,13 @@ export default {
             });
 
 
-
             var _this = this;
-            google.maps.event.addListener(this.map, 'click', function(event) {
+
+            google.maps.event.addListener(this.map, 'zoom_changed', function (event) {
+                _this.$set(_this.addressData, 'zoom', _this.map.getZoom());
+            });
+
+            google.maps.event.addListener(this.map, 'click', function (event) {
                 if (_this.marker) {
                     _this.marker.setMap(null);
                 }
@@ -186,7 +202,7 @@ export default {
             this.marker.setMap(null)
         },
 
-        geocode(latLng) {
+        geocode(latLng, keepOverride = false) {
             let _this = this
             this.geocoder.geocode({'location': latLng}, function(results, status) {
                 if (status === 'OK') {
@@ -194,6 +210,7 @@ export default {
                         _this.addressData.latitude = parseFloat(latLng.lat().toFixed(6))
                         _this.addressData.longitude = parseFloat(latLng.lng().toFixed(6))
                         _this.addressData.formatted_address = results[0].formatted_address
+                        _this.addressData.override_address = keepOverride ? _this.addressData.override_address : null;
                         _this.$refs.address.update(results[0].formatted_address);
                         _this.$emit('addressChanged', _this.addressData)
                     } else {
@@ -203,19 +220,19 @@ export default {
                     _this.addressData.latitude = null
                     _this.addressData.longitude = null
                     _this.addressData.formatted_address = null
+                    _this.addressData.override_address = null
                     _this.$refs.address.update('');
                     _this.$emit('addressChanged', _this.addressData)
-                    console.log(status);
                 }
             });
         },
 
         /*
-         * Set the initial, internal value for the field.
-         */
+            * Set the initial, internal value for the field.
+            */
         setInitialValue() {
             this.value = this.field.value || ''
-            if(this.value) {
+            if (this.value) {
                 this.addressData = JSON.parse(this.value)
                 this.$refs.address.update(this.addressData.formatted_address);
             }
@@ -225,7 +242,7 @@ export default {
          * Fill the given FormData object with the field's internal value.
          */
         fill(formData) {
-            formData.append(this.field.attribute, this.value || '')
+            formData.append(this.field.attribute, JSON.stringify(this.addressData))
         },
 
         /**
@@ -243,8 +260,9 @@ export default {
     },
 
     watch: {
-        'addressData' : {
+        'addressData': {
             handler: function (newAddressData) {
+                newAddressData.zoom = this.map.getZoom()
                 this.value = JSON.stringify(newAddressData)
                 this.mapOptions.center = new google.maps.LatLng(newAddressData.latitude, newAddressData.longitude)
             },
@@ -261,6 +279,6 @@ export default {
         height: 300px;
         margin: 0 auto;
         background: gray;
-        border:solid 1px #ccc;
+        border: solid 1px #ccc;
     }
 </style>
