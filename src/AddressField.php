@@ -4,7 +4,7 @@ namespace DigitalCloud\AddressField;
 
 use Laravel\Nova\Fields\Field;
 
-class NovaAddressField extends Field
+class AddressField extends Field
 {
     /**
      * The field's component.
