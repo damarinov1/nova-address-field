@@ -1,10 +1,10 @@
 <?php
 
-namespace DigitalCloud\AddressField;
+namespace Despark\AddressField;
 
 use Laravel\Nova\Fields\Field;
 
-class AddressField extends Field
+class NovaAddressField extends Field
 {
     /**
      * The field's component.
@@ -13,35 +13,39 @@ class AddressField extends Field
      */
     public $component = 'address-field';
 
-    public function withMap(){
-        return $this->withMeta([
-            'withMap' => true
-        ]);
-    }
-
-    public function withLatLng(){
-        return $this->withMeta([
-            'withLatLng' => true
-        ]);
-    }
-
-    public function countries($list){
-        return $this->withMeta([
-            'countries' => $list
-        ]);
-    }
-
-    public function initLocation($latitude, $longitude){
-        return $this->withMeta([
-            'lat' => $latitude,
-            'lng' => $longitude,
-        ]);
-    }
-
-    public function zoom($zoom)
+    public function withMap(): static
     {
         return $this->withMeta([
-            'zoom' => $zoom
+            'withMap' => true,
+        ]);
+    }
+
+    public function withLatLng(): static
+    {
+        return $this->withMeta([
+            'withLatLng' => true,
+        ]);
+    }
+
+    public function countries(array $list): static
+    {
+        return $this->withMeta([
+            'countries' => $list,
+        ]);
+    }
+
+    public function initLocation(string $lat, string $lng): static
+    {
+        return $this->withMeta([
+            'lat' => $lat,
+            'lng' => $lng
+        ]);
+    }
+
+    public function zoom(int $zoom): static
+    {
+        return $this->withMeta([
+            'zoom' => $zoom,
         ]);
     }
 }
