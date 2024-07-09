@@ -1,6 +1,6 @@
 <?php
 
-namespace Despark\AddressField;
+namespace DigitalCloud\AddressField;
 
 use Illuminate\Support\ServiceProvider;
 use Laravel\Nova\Events\ServingNova;

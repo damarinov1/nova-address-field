@@ -1,6 +1,6 @@
 <?php
 
-namespace Despark\AddressField;
+namespace DigitalCloud\AddressField;
 
 use Laravel\Nova\Fields\Field;
 
